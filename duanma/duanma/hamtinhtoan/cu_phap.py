@@ -1,6 +1,17 @@
 """Đọc/tách câu lệnh của người dùng (không phải hàm tính toán)."""
 from database.kieu_dl import bo_dau
 
+# Import các hàm thay thế phương thức chuỗi từ module riêng.
+# Đổi đường dẫn dưới đây cho khớp với file/folder bạn đã tạo.
+from ham_cac_phuong_thuc import (
+    isspace,
+    strip,
+    lstrip,
+    find,
+    startswith,
+    enumerate_,
+)
+
 _NHAY = {"'": "'", '"': '"', "‘": "’", "“": "”"}      # ký tự mở nháy -> ký tự đóng
 _PHEP_TOAN = (">=", "<=", "!=", "==", ">", "<", "=")
 
@@ -37,7 +48,7 @@ def tach(s, dau):
     m = che(s, True)
     kq = []
     bat_dau = 0
-    for i, ch in enumerate(m):
+    for i, ch in enumerate_(m):
         if ch == dau:
             kq.append(s[bat_dau:i])
             bat_dau = i + 1
@@ -65,24 +76,27 @@ def tim_tu(s, tu, cuoi=False):
     m = che(s, False)
     k = bo_dau(s)
     t = ""
-    for i, ch in enumerate(k):
-        t += "\0" if m[i] == "\0" else ch
+    for i, ch in enumerate_(k):
+        if m[i] == "\0":
+            t += "\0"
+        else:
+            t += ch
     kq = -1
-    pos = t.find(tu)
+    pos = _find(t, tu)
     while pos >= 0:
-        truoc = pos == 0 or t[pos - 1].isspace()
-        sau = pos + len(tu) == len(t) or t[pos + len(tu)].isspace()
+        truoc = pos == 0 or _la_isspace(t[pos - 1])
+        sau = pos + len(tu) == len(t) or _la_isspace(t[pos + len(tu)])
         if truoc and sau:
             kq = pos
             if not cuoi:
                 return kq
-        pos = t.find(tu, pos + 1)
+        pos = _find(t, tu, pos + 1)
     return kq
 
 
 def bo_nhay(s):
     """('abc' hoặc "abc") -> ('abc', True);  abc -> ('abc', False)."""
-    s = s.strip()
+    s = _strip(s)
     if len(s) >= 2 and s[0] in _NHAY and s[-1] == _NHAY[s[0]]:
         return s[1:-1], True
     return s, False
@@ -90,13 +104,21 @@ def bo_nhay(s):
 
 def bo_tu_lenh(lenh, tu):
     """'Thêm: 'a' vào b' với tu='them' -> "'a' vào b".  Không bắt đầu bằng tu -> None."""
-    s = lenh.strip()
-    if not bo_dau(s).startswith(tu):
+    s = _strip(lenh)
+    if not _startswith(bo_dau(s), tu):
         return None
     phan_con = s[len(tu):]
-    if phan_con and not (phan_con[0].isspace() or phan_con[0] == ":"):
+    if phan_con and not (_la_isspace(phan_con[0]) or phan_con[0] == ":"):
         return None
-    return phan_con.lstrip(" :\t\r\n")
+    # bỏ khoảng trắng VÀ dấu ':' ở đầu (giống lstrip(" :\t\r\n"))
+    i = 0
+    while i < len(phan_con):
+        ch = phan_con[i]
+        if _la_isspace(ch) or ch == ":":
+            i = i + 1
+        else:
+            break
+    return phan_con[i:]
 
 
 def tach_dieu_kien(s):
@@ -105,8 +127,8 @@ def tach_dieu_kien(s):
     for i in range(len(m)):
         for p in _PHEP_TOAN:
             if m[i:i + len(p)] == p:
-                cot = s[:i].strip()
-                gt = s[i + len(p):].strip()
+                cot = _strip(s[:i])
+                gt = _strip(s[i + len(p):])
                 if not cot or not gt:
                     raise ValueError(f"Điều kiện thiếu cột hoặc giá trị: {s!r}")
                 return cot, ("==" if p == "=" else p), gt
@@ -114,11 +136,11 @@ def tach_dieu_kien(s):
 
 
 def tach_phep_gia_tri(s):
-    """'> 500000' -> ('>', '500000')."""
-    s = s.strip()
+    """> 500000' -> ('>', '500000')."""
+    s = _strip(s)
     for p in _PHEP_TOAN:
-        if s.startswith(p):
-            gt = s[len(p):].strip()
+        if _startswith(s, p):
+            gt = _strip(s[len(p):])
             if gt:
                 return ("==" if p == "=" else p), gt
     raise ValueError(f"Điều kiện không hợp lệ: {s!r} (ví dụ: '> 500000')")

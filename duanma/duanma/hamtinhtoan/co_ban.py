@@ -7,9 +7,11 @@ import pandas as pd
 
 
 def la_trong(v):
-    if v is None or v is pd.NA or v is pd.NaT:
+    if v is None:
         return True
-    if v != v:                      # NaN
+    if type(v).__name__ in ("NAType", "NaTType"):
+        return True
+    if v != v:                      # NaN (float), hoặc giá trị không bằng chính nó
         return True
     return False
 

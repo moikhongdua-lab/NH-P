@@ -1,6 +1,6 @@
 from hamtinhtoan.co_ban import la_trong, so_hang, do_dai, kiem_cot
 from hamtinhtoan.gom_nhom import GomNhom
-
+from ham_cac_phuong_thuc import isinstance_
 
 def dem(x, cot=None):
     """Đếm.

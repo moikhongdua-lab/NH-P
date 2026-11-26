@@ -1,5 +1,6 @@
 from hamtinhtoan.co_ban import la_trong, kiem_cot
 from hamtinhtoan.gom_nhom import GomNhom
+from ham_cac_phuong_thuc import isinstance_
 
 
 def tong_va_dem(ds):
@@ -20,7 +21,9 @@ def tong(x, cot):
     """x là bảng  -> bảng 1 dòng {Tong_<cột>: [tổng]}
        x là GomNhom -> mỗi nhóm một dòng {<cột gom>: [...], Tong_<cột>: [...]}"""
     ten = "Tong_" + cot
-    if isinstance(x, GomNhom):
+    
+    # Thay isinstance -> isinstance_
+    if isinstance_(x, GomNhom):
         kiem_cot(x.mau, cot)
         kq = {x.cot_nhom: [], ten: []}
         for k in x.khoa:
@@ -31,6 +34,7 @@ def tong(x, cot):
             else:
                 kq[ten].append(None)
         return kq
+        
     kiem_cot(x, cot)
     t, n = tong_va_dem(x[cot])
     if n > 0:

@@ -1,6 +1,7 @@
 from hamtinhtoan.co_ban import la_trong, so_hang, chon_hang, kiem_cot
 from hamtinhtoan.cu_phap import tach_phep_gia_tri, bo_nhay
 from database.kieu_dl import doi_theo_mau
+from ham_cac_phuong_thuc import isinstance_, _casefold
 
 
 def loc_o(bang, cot, dieu_kien):
@@ -22,16 +23,19 @@ def loc_o(bang, cot, dieu_kien):
             gt = doi_theo_mau(chuoi, mau)
         except ValueError as e:
             raise ValueError(f"Điều kiện trên cột {cot}: {e}") from None
-        gt_chu = isinstance(gt, str)
+
+        gt_chu = isinstance_(gt, str)
+        
         if gt_chu:
-            gt = gt.casefold()
+            gt = _casefold(gt)
+            
         n = so_hang(bang)
         i = 0
         while i < n:
             v = bang[cot][i]
             if not la_trong(v):
-                if gt_chu and isinstance(v, str):
-                    v = v.casefold()
+                if gt_chu and isinstance_(v, str):
+                    v = _casefold(v)
                 try:
                     if phep == ">":
                         ok = v > gt

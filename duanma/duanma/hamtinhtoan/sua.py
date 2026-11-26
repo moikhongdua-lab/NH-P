@@ -6,6 +6,7 @@ Giá trị điều kiện nên đặt trong nháy nếu có chứa chữ "thành
 """
 from database.map_dulieu.map import tim_cot_hoac_loi, chon_cap_cot
 from hamtinhtoan.cu_phap import bo_tu_lenh, tim_tu, tach_dieu_kien, bo_nhay
+from ham_cac_phuong_thuc import strip
 
 CU_PHAP = "sửa <cột cần sửa> khi <cột điều kiện> = '<giá trị cũ>' thành <giá trị mới>"
 VI_DU = "sửa LuongCoBan khi HoTen = 'Thanh Tùng' thành 100000"
@@ -23,9 +24,12 @@ def phan_tich(lenh):
     if j < 0:
         raise ValueError(f"Thiếu từ khóa 'khi' hoặc 'thành'.\nCú pháp: {CU_PHAP}")
     i_thanh = sau_khi + j
-    cot_dich = con[:i_khi].strip()
-    dieu_kien = con[sau_khi:i_thanh].strip()
-    moi = con[i_thanh + 5:].strip()
+    
+    # Thay .strip() -> strip()
+    cot_dich = strip(con[:i_khi])
+    dieu_kien = strip(con[sau_khi:i_thanh])
+    moi = strip(con[i_thanh + 5:])
+    
     if not cot_dich:
         raise ValueError(f"Chưa ghi cột cần sửa.\nCú pháp: {CU_PHAP}")
     cot_loc, phep, gt_loc = tach_dieu_kien(dieu_kien)
