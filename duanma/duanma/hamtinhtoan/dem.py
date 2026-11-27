@@ -9,7 +9,7 @@ def dem(x, cot=None):
     dem(bảng)           -> tổng số dòng
     dem(bảng, cot)      -> mỗi giá trị khác nhau của `cot` xuất hiện bao nhiêu lần
     Ô trống ở cột đếm bị bỏ qua (như COUNT(cột) trong SQL)."""
-    if isinstance(x, GomNhom):
+    if isinstance_(x, GomNhom):
         if cot is None:
             kq = {x.cot_nhom: [], "SoLuong": []}
             for k in x.khoa:

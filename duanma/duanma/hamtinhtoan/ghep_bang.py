@@ -4,7 +4,8 @@ from hamtinhtoan.co_ban import la_trong, so_hang, kiem_cot
 def ghep_bang(bang1, bang2, cot, kieu_ghep="inner", cot2=None):
     """Nối hai bảng theo quy tắc  bang1[cot] = bang2[cot2]  (cot2 mặc định cùng tên cot).
     kieu_ghep = "inner": chỉ giữ dòng khớp;  "left": giữ mọi dòng bang1, không khớp thì phần bang2 để trống.
-    Khóa trống không bao giờ khớp. Cột trùng tên của bang2 được đổi thành <tên>_2."""
+    Khóa trống không bao giờ khớp.
+    Cột của bang2 trùng tên với cột đang có được đổi thành <tên>_2 (nếu <tên>_2 cũng đã có thì _3, _4, ...)."""
     if cot2 is None:
         cot2 = cot
     if kieu_ghep != "inner" and kieu_ghep != "left":
@@ -12,14 +13,28 @@ def ghep_bang(bang1, bang2, cot, kieu_ghep="inner", cot2=None):
     kiem_cot(bang1, cot)
     kiem_cot(bang2, cot2)
 
+    da_dung = {}                                    # mọi tên cột đã có trong kết quả
+    for c in bang1:
+        da_dung[c] = True
+
     ten_moi = {}                                    # tên cột bang2 trong kết quả
+    trung = []                                      # cột bang2 trùng tên với cột đã có
     for c in bang2:
         if c == cot2 and cot2 == cot:
             continue                                # cột khóa trùng tên: giữ một cột
         if c in bang1:
-            ten_moi[c] = c + "_2"
+            trung.append(c)
         else:
             ten_moi[c] = c
+            da_dung[c] = True                       # giữ chỗ trước để tên mới không đè lên cột này
+    for c in trung:
+        ten = c + "_2"
+        n = 2
+        while ten in da_dung:                       # tránh đè lên cột có sẵn (vd bang1 đã có <tên>_2)
+            n += 1
+            ten = c + "_" + str(n)
+        da_dung[ten] = True
+        ten_moi[c] = ten
 
     kq = {}
     for c in bang1:
