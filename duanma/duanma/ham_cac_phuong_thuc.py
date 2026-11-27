@@ -95,3 +95,22 @@ def _casefold(s):
         else:
             kq += ch
     return kq
+
+def _la_mau_gio(s: str) -> bool:
+    phan = s.split(":")
+    if len(phan) not in (2, 3):
+        return False
+    for p in phan:
+        if not p.isdigit():
+            return False
+    return True
+
+
+def _upper(s):
+    kq = ""
+    for ch in s:
+        if 97 <= ord(ch) <= 122:
+            kq += chr(ord(ch) - 32)
+        else:
+            kq += ch
+    return kq

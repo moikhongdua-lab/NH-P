@@ -9,6 +9,7 @@ import numbers
 import re
 import unicodedata
 from datetime import date, datetime, time
+from ham_cac_phuong_thuc import isinstance_, _casefold, strip, _la_mau_gio
 
 import pandas as pd
 
@@ -30,8 +31,9 @@ _MAU_GIO = re.compile(r"^\d{1,2}:\d{2}(:\d{2})?$")
 def la_null(v) -> bool:
     if v is None or v is pd.NA or v is pd.NaT:
         return True
-    if isinstance_(v, str):
-        return v.strip().lower() in _CHUOI_NULL
+    # Sử dụng strip() và _casefold() thay cho .strip() và .lower()
+    if isinstance(v, str): 
+        return _casefold(strip(v)) in _CHUOI_NULL
     try:
         return bool(pd.isna(v))
     except (TypeError, ValueError):
@@ -51,13 +53,13 @@ def bo_dau(s) -> str:
     return "".join(kq)
 
 
-def parse_time(value) -> str | None:
+ddef parse_time(value) -> str | None:
     """Chuẩn hóa về 'HH:MM:SS'. Nhận 'HH:MM', 'HH:MM:SS', datetime.time, datetime, Timestamp."""
     if la_null(value):
         return None
-    if isinstance(value, (time, datetime, pd.Timestamp)):
-        return f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}"
-    parts = str(value).strip().split(":")
+    if isinstance_(value, (time, datetime, pd.Timestamp)):
+        return f"{value.hour:02d}:{value.minute:02d}:{value.second:02d}"   
+    parts = strip(f"{value}").split(":")
     if len(parts) not in (2, 3):
         raise ValueError(f"Giờ không hợp lệ: {value!r}")
     try:
@@ -71,41 +73,46 @@ def parse_time(value) -> str | None:
 
 
 def _ep_int(v):
-    if isinstance(v, bool):
-        raise ValueError(f"không phải số nguyên: {v!r}")
+    if isinstance_(v, bool):
+        raise ValueError(f"không phải số nguyên: {v!r}")        
     try:
-        f = float(v.strip()) if isinstance(v, str) else float(v)
+        f = float(strip(v)) if isinstance_(v, str) else float(v)
     except (TypeError, ValueError):
         raise ValueError(f"không phải số nguyên: {v!r}") from None
-    if not math.isfinite(f) or not f.is_integer():
+    if f * 0 != 0:
+        raise ValueError(f"không phải số nguyên: {v!r}")
+    if int(f) != f:
         raise ValueError(f"không phải số nguyên: {v!r}")
     return int(f)
 
 
 def _ep_float(v):
-    if isinstance(v, bool):
+    if isinstance_(v, bool):
         raise ValueError(f"không phải số: {v!r}")
+        
     try:
-        f = float(v.strip()) if isinstance(v, str) else float(v)
+        # Dùng strip(v) tự viết thay cho v.strip()
+        f = float(strip(v)) if isinstance_(v, str) else float(v)
     except (TypeError, ValueError):
         raise ValueError(f"không phải số: {v!r}") from None
-    if not math.isfinite(f):
+    if f * 0 != 0:
         raise ValueError(f"không phải số: {v!r}")
     return f
 
 
 def _ep_str(v):
-    return str(v).strip()
+    return strip(f"{v}")
 
 
 def _ep_date(v):
-    if isinstance(v, (pd.Timestamp, datetime)):
-        return pd.Timestamp(v).tz_localize(None).normalize() if getattr(v, "tzinfo", None) else pd.Timestamp(v).normalize()
-    if isinstance(v, date):
-        return pd.Timestamp(v)
-    s = str(v).strip()
-    if len(s) > 10 and s[10] in " T":      # '2026-11-22 00:00:00' -> lấy phần ngày
+    if isinstance_(v, (pd.Timestamp, datetime)):
+        return pd.Timestamp(year=v.year, month=v.month, day=v.day)  
+    if isinstance_(v, date):
+        return pd.Timestamp(v)    
+    s = strip(f"{v}")
+    if len(s) > 10 and s[10] in " T":    
         s = s[:10]
+        
     for dinh_dang in _DINH_DANG_NGAY:
         try:
             return pd.Timestamp(datetime.strptime(s, dinh_dang))
@@ -117,7 +124,6 @@ def _ep_date(v):
 _BO_EP = {"int": _ep_int, "float": _ep_float, "str": _ep_str,
           "date": _ep_date, "time": parse_time}
 
-
 def ep_gia_tri(kieu: str, gia_tri, ten_cot: str = ""):
     """Ép MỘT giá trị về đúng kiểu. Trống -> None. Sai kiểu -> ValueError."""
     if la_null(gia_tri):
@@ -125,31 +131,33 @@ def ep_gia_tri(kieu: str, gia_tri, ten_cot: str = ""):
     try:
         return _BO_EP[kieu](gia_tri)
     except ValueError as e:
-        raise ValueError(f"Cột {ten_cot}: {e}" if ten_cot else str(e)) from None
-
+        if ten_cot:
+            raise ValueError(f"Cột {ten_cot}: {e}") from None
+        raise ValueError(f"{e}") from None
 
 def doi_theo_mau(chuoi: str, mau):
     """Đổi chuỗi người dùng gõ về cùng kiểu với giá trị mẫu `mau` của cột (để so sánh)."""
-    if isinstance(mau, bool):
+    if isinstance_(mau, bool):
         raise ValueError("không so sánh được với cột kiểu đúng/sai")
-    if isinstance(mau, numbers.Real):
+    if isinstance_(mau, (int, float)):
         try:
-            f = float(chuoi.strip())
+            f = float(strip(chuoi))
         except ValueError:
             raise ValueError(f"{chuoi!r} không phải số") from None
-        if not math.isfinite(f):
+        if f * 0 != 0:
             raise ValueError(f"{chuoi!r} không phải số")
         return f
-    if isinstance(mau, (pd.Timestamp, datetime, date)):
+    if isinstance_(mau, (pd.Timestamp, datetime, date)):
         return _ep_date(chuoi)
-    if isinstance(mau, str):
-        if _MAU_GIO.match(mau.strip()):          # cột giờ: so sánh dạng HH:MM:SS
+        
+    if isinstance_(mau, str):
+        if _la_mau_gio(strip(mau)):
             try:
                 return parse_time(chuoi)
             except ValueError:
                 pass
         return chuoi
-    raise ValueError(f"không hỗ trợ so sánh kiểu {type(mau).__name__}")
+    raise ValueError(f"không hỗ trợ so sánh kiểu này")
 
 
 def _thanh_series(gia_tri: list, kieu: str, index) -> pd.Series:
@@ -164,11 +172,12 @@ def tao_bang_rong(ten_bang: str) -> pd.DataFrame:
     cols = SCHEMA[ten_bang]["cols"]
     return pd.DataFrame({c: pd.Series(dtype=DTYPE[k]) for c, k in cols.items()})
 
-
 def ep_kieu(ten_bang: str, df: pd.DataFrame) -> pd.DataFrame:
     """Ép toàn bộ cột về đúng kiểu schema. Gom hết lỗi rồi báo một lần."""
-    from database.schema import SCHEMA          # import trễ để tránh vòng lặp import
+    from database.schema import SCHEMA
     cols = SCHEMA[ten_bang]["cols"]
+    
+    # Tìm cột thừa
     la = [c for c in df.columns if c not in cols]
     if la:
         raise ValueError(f"{ten_bang}: cột không có trong schema: {la}")
@@ -177,16 +186,24 @@ def ep_kieu(ten_bang: str, df: pd.DataFrame) -> pd.DataFrame:
     for cot, kieu in cols.items():
         nguon = df[cot].tolist() if cot in df.columns else [None] * len(df)
         gia_tri = []
-        for i, v in zip(df.index, nguon):
+        
+        for i, v in enumerate_(nguon):
+            idx = df.index[i]  # Lấy index tương ứng
             if la_null(v):
-                gia_tri.append(None)             # ô rỗng -> NA, dòng vẫn giữ nguyên
+                gia_tri.append(None)             
                 continue
             try:
                 gia_tri.append(_BO_EP[kieu](v))
             except ValueError as e:
-                loi.append(f"  dòng {i}, cột {cot}: {e}")
+                loi.append(f"  dòng {idx}, cột {cot}: {e}")
                 gia_tri.append(None)
+                
         ket_qua[cot] = _thanh_series(gia_tri, kieu, df.index)
+        
     if loi:
-        raise ValueError(f"{ten_bang}: lỗi kiểu dữ liệu\n" + "\n".join(loi))
+        chuoi_loi = ""
+        for l in loi:
+            chuoi_loi += "\n" + l
+        raise ValueError(f"{ten_bang}: lỗi kiểu dữ liệu" + chuoi_loi)
+        
     return pd.DataFrame(ket_qua, index=df.index)
