@@ -30,7 +30,7 @@ _MAU_GIO = re.compile(r"^\d{1,2}:\d{2}(:\d{2})?$")
 def la_null(v) -> bool:
     if v is None or v is pd.NA or v is pd.NaT:
         return True
-    if isinstance(v, str):
+    if isinstance_(v, str):
         return v.strip().lower() in _CHUOI_NULL
     try:
         return bool(pd.isna(v))
